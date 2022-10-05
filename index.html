@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        html,
+        body,
+        .center {
+            height: 100%;
+            margin: 0px;
+        }
+
+        .center {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .container {
+            height: 70%;
+            width: 70%;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="center">
+        <div class="container">
+            <canvas id="myChart"></canvas>
+        </div>
+    </div>
+
+
+
+    <script>
+
+        const max_time = 45;
+        const unit = 60; // time unit in seconds
+        const fontColor = "#666666";
+
+        const originalDoughnutDraw = Chart.controllers.doughnut.prototype.draw;
+
+        class Timer extends Chart.controllers.doughnut {
+            draw() {
+                const chart = this;
+
+                const {
+                    width,
+                    height,
+                    ctx,
+                    config
+                } = chart.chart;
+
+                const {
+                    datasets
+                } = config.data;
+
+                const dataset = datasets[1];
+                const datasetData = dataset.data;
+                const completed = datasetData[1];
+                const text = `${completed} Minuten`;
+                let x, y, mid, fontHeight;
+
+                originalDoughnutDraw.apply(this, arguments);
+
+                const fontSize = (height / 200).toFixed(2);
+                ctx.font = "bold " + fontSize + "em Arial, sans-serif";
+                ctx.textBaseline = "top";
+
+                let metrics = ctx.measureText(text);
+                x = Math.round((width - metrics.width) / 2);
+                fontHeight = metrics.fontBoundingBoxAscent + metrics.fontBoundingBoxDescent;
+                y = height / 2 - fontHeight / 4;
+                ctx.fillStyle = fontColor;
+                ctx.fillText(text, x, y);
+                mid = x + ctx.measureText(text).width / 2;
+
+            }
+        }
+
+        Timer.id = 'timer';
+        Timer.defaults = Chart.controllers.doughnut.defaults;
+        Chart.register(Timer);
+
+        var context = document.getElementById('myChart').getContext('2d');
+        var chart = new Chart(context, {
+            type: 'timer',
+            data: {
+                labels: [
+                    'Einführung',
+                    'Ablauf',
+                    'Diskussion',
+                    'Instruktion',
+                    'Pair Learning',
+                    'Ergebnis'
+
+                ],
+                datasets: [
+
+                    {
+                        label: 'Second dataset',
+                        data: [3, 2, 10, 5, 20, 5],
+                        backgroundColor: ['#c66', '#ccc', '#6c6', '#ccc', '#6c6', '#6c6'],
+                        borderWidth: 5,
+                        //borderColor: '#333'
+                        //hoverBorderColor: '#000'
+                    },
+                    {
+                        label: 'First dataset',
+                        data: [0, max_time],
+                        backgroundColor: ['#666', '#aaa'],
+                        borderWidth: 5,
+                        //borderColor: '#333'
+                    },
+
+
+                ],
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false,
+                    },
+                    tooltip: {
+                        displayColors: false,
+                        bodyFont: {
+                            size: 30
+                        },
+                        caretSize: 12,
+                        yAlign: 'bottom',
+      
+                    }
+                },
+
+            },
+        }); 
+        
+
+        var start = Date.now();
+        var intervalId = window.setInterval(function () {
+            var time_passed = Math.min(Math.floor((Date.now() - start) / 1000 / unit), max_time);
+            chart.data.datasets[1].data = [time_passed, max_time - time_passed];
+            chart.update();
+        }, 1000 * unit);
+
+
+    </script>
+</body>
+
+</html>
